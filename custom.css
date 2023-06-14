@@ -1,0 +1,15 @@
+.container {
+  width: 80%;
+  margin: 0 auto; /* centers the container horizontally */
+  background-color: lightgray;
+  padding: 20px;
+  text-align: center; /* centers the image horizontally and vertically */
+  line-height: 300px; /* sets the line height equal to the container height to center the image vertically */
+}
+
+img {
+  display: inline-block; /* this ensures that the image can be centered vertically */
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle; /* centers the image vertically within the line-height */
+}
