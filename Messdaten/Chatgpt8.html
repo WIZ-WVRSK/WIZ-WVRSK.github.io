@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="LATIN1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messdatenübersicht HRB Obereiper Mühle</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        #plotly-div {
+            height: 90vh;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button onclick="updateRange('3days')">Letzte 3 Tage</button>
+    <button onclick="updateRange('7days')">Letzte 7 Tage</button>
+
+    <div id="plotly-div"></div>
+
+    <script>
+        // Funktion zum Einlesen und Parsen von CSV-Daten
+        function parseCSV(data) {
+            const rows = data.split('\n').slice(1);
+            const xValues = [];
+            const yValues = [];
+
+            rows.forEach(row => {
+                const columns = row.split(',');
+                xValues.push(columns[0]);
+                yValues.push(parseFloat(columns[1]));
+            });
+
+            return { x: xValues, y: yValues };
+        }
+
+        let currentXRange = '1day';
+
+        // Funktion zum Aktualisieren des Zeitbereichs
+        function updateRange(range) {
+            currentXRange = range;
+            plotData();
+        }
+
+        // Hauptfunktion zum Zeichnen der Diagramme
+        function plotData() {
+            // Alle CSV-Daten abrufen
+            Promise.all([
+                fetch('data1.csv').then(response => response.text()),
+                fetch('data2.csv').then(response => response.text()),
+                fetch('data3.csv').then(response => response.text())
+            ])
+            .then(([data1, data2, data3]) => {
+                const parsedData1 = parseCSV(data1);
+                const parsedData2 = parseCSV(data2);
+                const parsedData3 = parseCSV(data3)
+
+
+                // Kumulative Summe für das dritte Diagramm berechnen
+                //let cumulativeSum = 0;
+                //const cumulativeValues = parsedData3.y.map(value => {
+                //    cumulativeSum += value;
+                //    return cumulativeSum;
+
+
+                // Startdatum basierend auf dem gewählten Zeitbereich festlegen
+                let startDate = new Date();
+                switch (currentXRange) {
+                    case '1day':
+                        startDate.setDate(startDate.getDate() - 1);
+                        break;
+                    case '3days':
+                        startDate.setDate(startDate.getDate() - 3);
+                        break;
+                    case '7days':
+                        startDate.setDate(startDate.getDate() - 7);
+                        break;
+                }
+
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 7); // Enddatum für 7 Tage ab Startdatum
+
+                const traces = [
+                    {
+                        x: parsedData1.x,
+                        y: parsedData1.y,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Beckenfüllstand',
+                        line: { color: 'blue' },
+                        xaxis: 'x',
+                        yaxis: 'y'
+                    },
+                    {
+                        x: [startDate, endDate],
+                        y: Array(2).fill(178.05),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Stauziel BHQ1',
+                        line: { color: 'yellow', dash: 'dash', width: 2, opacity: 0.5 },
+                        xaxis: 'x',
+                        yaxis: 'y'
+                    },
+                    {
+                        x: [startDate, endDate],
+                        y: Array(2).fill(178.28),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Stauziel BHQ2',
+                        line: { color: 'red', dash: 'dash', width: 2, opacity: 0.5 },
+                        xaxis: 'x',
+                        yaxis: 'y'
+                    },
+                    {
+                        x: parsedData2.x,
+                        y: parsedData2.y,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Auslassfüllstand',
+                        line: { color: 'blue' },
+                        xaxis: 'x2',
+                        yaxis: 'y2'
+                    },
+                    {
+                        x: [startDate, endDate],
+                        y: Array(2).fill(1.90),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Stollendecke',
+                        line: { color: 'red', dash: 'dash', width: 2, opacity: 0.5 },
+                        xaxis: 'x2',
+                        yaxis: 'y2'
+                    },
+                    {
+                        x: parsedData3.x,
+                        y: parsedData3.y,
+                        type: 'bar',
+                        name: 'Gebietsniederschlag',
+                        marker: { color: 'lightblue' },
+                        xaxis: 'x3',
+                        yaxis: 'y3'
+                    }
+
+                ];
+
+                const layout = {
+                    title: 'Messdatenübersicht HRB Obereiper Mühle', // Gesamttitel
+                    grid: { rows: 3, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
+                    margin: { t: 100, b: 50, l: 50, r: 50 },
+                    xaxis: {
+                        range: [startDate, endDate],
+                        showticklabels: true, // x-Achsentitel ausblenden
+                        showgrid: true,
+
+                    },
+                    yaxis: {
+                        range: [173.00, 179],
+                        title: 'm',
+                        tickformat: '.2f',
+                        titlefont: { size: 14 },
+                        subplot: 'subplot1',
+                        titletext: 'Beckenfüllstand', // Diagrammtitel für Subplot 1
+                        zeroline: true,
+                        zerolinewitdh: 1,
+                        zerolinevalue: 173
+
+                    },
+                    xaxis2: {
+                        matches: 'x',
+                        showticklabels: true,
+                        zeroline: true,
+                    	zerolinewidth: 0.5
+
+                    },
+                    yaxis2: {
+                        range: [0, 2.0],
+                        title: 'm',
+                        tickformat: '.2f',
+                        titlefont: { size: 14 },
+                        subplot: 'subplot2',
+                        titletext: 'Auslassfüllstand' // Diagrammtitel für Subplot 2
+                    },
+                    xaxis3: {
+                        matches: 'x',
+                        showticklabels: true,
+                        anchor: 'y3',
+                        //rangeslider: {range: ['2023-11-17', '2023-11-30']}
+                        zeroline: true,
+                        zerolinewidth: 1,
+                        zerolinecolor: '#e377c2'
+                    },
+                    yaxis3: {
+                        title: 'mm',
+                        tickformat: '.2f',
+                        titlefont: { size: 14 },
+                        subplot: 'subplot3',
+
+
+                    }
+
+                };
+
+                Plotly.newPlot("plotly-div", traces, layout);
+
+                let isRelayouting = false;
+
+                document.getElementById('plotly-div').on('plotly_relayout', function(eventData) {
+                    if (!isRelayouting) {
+                        isRelayouting = true;
+
+                        const x0 = eventData['xaxis.range[0]'];
+                        const x1 = eventData['xaxis.range[1]'];
+
+                        if (x0 && x1) {
+                            const update = {
+                                'xaxis.range': [x0, x1]
+                            };
+                            Plotly.relayout('plotly-div', update);
+                        }
+
+                        isRelayouting = false;
+                    }
+                });
+            });
+        }
+
+        plotData();
+    </script>
+</body>
+
+</html>
